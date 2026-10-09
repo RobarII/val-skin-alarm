@@ -36,7 +36,7 @@ def notify_wishlist_match(skin_names: List[str]):
     """Sends notification when tracked skins are detected in the daily store."""
     if not skin_names:
         return
-    title = "🎯 Будильник скинов VALORANT!"
+    title = "Будильник скинов VALORANT"
     if len(skin_names) == 1:
         message = f"В вашем магазине появился скин: {skin_names[0]}! Успейте забрать."
     else:
@@ -47,6 +47,6 @@ def notify_wishlist_match(skin_names: List[str]):
 def send_test_notification():
     """Sends a test notification to verify system toast functionality."""
     send_notification(
-        "🔔 Будильник скинов VALORANT",
+        "Будильник скинов VALORANT",
         "Уведомления успешно работают! Вы получите оповещение, как только скин из вишлиста появится в магазине."
     )

@@ -23,7 +23,7 @@ class RegistrationFrame(ctk.CTkFrame):
         # Header
         self.title_label = ctk.CTkLabel(
             self.card,
-            text="🎯 VALORANT SKIN ALARM",
+            text="VALORANT SKIN ALARM",
             font=ctk.CTkFont(size=22, weight="bold")
         )
         self.title_label.pack(padx=40, pady=(35, 5))
@@ -79,7 +79,7 @@ class RegistrationFrame(ctk.CTkFrame):
 
         self.open_env_btn = ctk.CTkButton(
             btn_row,
-            text="📝 Открыть .env",
+            text="Открыть .env",
             width=110,
             height=26,
             font=ctk.CTkFont(size=11),
@@ -92,7 +92,7 @@ class RegistrationFrame(ctk.CTkFrame):
 
         self.get_key_btn = ctk.CTkButton(
             btn_row,
-            text="🔗 Получить ключ Riot",
+            text="Получить ключ Riot",
             width=140,
             height=26,
             font=ctk.CTkFont(size=11),
@@ -115,7 +115,7 @@ class RegistrationFrame(ctk.CTkFrame):
 
         # Status / Feedback label
         has_key = bool(RIOT_API_KEY)
-        key_status = "🔑 Riot API ключ загружен" if has_key else "ℹ️ Ключ можно указать сейчас или использовать локальный режим"
+        key_status = "Riot API ключ загружен из .env" if has_key else "Ключ можно указать сейчас или использовать локальный режим"
         self.status_label = ctk.CTkLabel(
             self.form_frame,
             text=key_status,
@@ -145,7 +145,7 @@ class RegistrationFrame(ctk.CTkFrame):
 
         if not name or not tag:
             self.status_label.configure(
-                text="⚠️ Пожалуйста, введите ваш Ник и Тег",
+                text="Пожалуйста, введите ваш Ник и Тег",
                 text_color="#FD4556"
             )
             return

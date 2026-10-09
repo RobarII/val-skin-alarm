@@ -46,7 +46,7 @@ class ShopCard(ctk.CTkFrame):
         if self.is_wishlist:
             badge = ctk.CTkLabel(
                 self,
-                text="⭐ В ВАШЕМ ВИШЛИСТЕ",
+                text="В ВАШЕМ ВИШЛИСТЕ",
                 font=ctk.CTkFont(size=11, weight="bold"),
                 fg_color="#FD4556",
                 text_color="white",
@@ -94,7 +94,7 @@ class ShopCard(ctk.CTkFrame):
         self.img_label.pack(padx=14, pady=(6, 12), fill="x")
 
         # Bottom Action / Wishlist Toggle
-        btn_text = "★ В вишлисте" if self.is_wishlist else "☆ В вишлист"
+        btn_text = "В вишлисте" if self.is_wishlist else "В вишлист"
         btn_fg = ("#FD4556", "#FD4556") if self.is_wishlist else ("gray85", "#27272a")
         btn_hover = ("#E03E4D", "#E03E4D") if self.is_wishlist else ("gray75", "#3f3f46")
         btn_text_color = "white" if self.is_wishlist else ("black", "white")
@@ -119,10 +119,10 @@ class ShopCard(ctk.CTkFrame):
         new_state = self.on_wishlist_toggle(self.skin_uuid)
         self.is_wishlist = new_state
         if new_state:
-            self.fav_btn.configure(text="★ В вишлисте", fg_color="#FD4556", hover_color="#E03E4D", text_color="white")
+            self.fav_btn.configure(text="В вишлисте", fg_color="#FD4556", hover_color="#E03E4D", text_color="white")
             self.configure(border_color=("#FD4556", "#FD4556"), border_width=2)
         else:
-            self.fav_btn.configure(text="☆ В вишлист", fg_color=("gray85", "#27272a"), hover_color=("gray75", "#3f3f46"), text_color=("black", "white"))
+            self.fav_btn.configure(text="В вишлист", fg_color=("gray85", "#27272a"), hover_color=("gray75", "#3f3f46"), text_color=("black", "white"))
             self.configure(border_color=("gray80", "#27272a"), border_width=1)
 
     def _load_image_async(self):
@@ -173,7 +173,7 @@ class ShopTab(ctk.CTkFrame):
 
         self.status_label = ctk.CTkLabel(
             self.info_box,
-            text="● Проверка статуса магазина...",
+            text="Проверка статуса магазина...",
             font=ctk.CTkFont(size=14, weight="bold"),
             anchor="w"
         )
@@ -181,7 +181,7 @@ class ShopTab(ctk.CTkFrame):
 
         self.countdown_label = ctk.CTkLabel(
             self.info_box,
-            text="⏳ До обновления: рассчитывается...",
+            text="До обновления: рассчитывается...",
             font=ctk.CTkFont(size=12),
             text_color=("gray40", "gray50"),
             anchor="w"
@@ -194,7 +194,7 @@ class ShopTab(ctk.CTkFrame):
 
         self.refresh_btn = ctk.CTkButton(
             self.actions_frame,
-            text="🔄 Обновить",
+            text="Обновить",
             width=100,
             height=34,
             corner_radius=6,
@@ -204,7 +204,7 @@ class ShopTab(ctk.CTkFrame):
 
         self.demo_btn = ctk.CTkButton(
             self.actions_frame,
-            text="🎲 Демо-магазин",
+            text="Демо-магазин",
             width=120,
             height=34,
             corner_radius=6,
@@ -217,7 +217,7 @@ class ShopTab(ctk.CTkFrame):
 
         self.test_toast_btn = ctk.CTkButton(
             self.actions_frame,
-            text="🔔 Тест",
+            text="Тест",
             width=70,
             height=34,
             corner_radius=6,
@@ -258,18 +258,18 @@ class ShopTab(ctk.CTkFrame):
 
     def _update_status(self, fresh: bool, source: str = "cache", message: str = ""):
         if message:
-            self.status_label.configure(text=f"● {message}", text_color=("gray40", "gray60"))
+            self.status_label.configure(text=message, text_color=("gray40", "gray60"))
             return
 
         if fresh:
             src_str = "Riot Client" if source == "riot_client" else ("Демо-режим" if source == "demo" else "Кэш")
             self.status_label.configure(
-                text=f"● Магазин актуален на сегодня ({src_str})",
+                text=f"Магазин актуален на сегодня ({src_str})",
                 text_color=("#16a34a", "#22c55e")
             )
         else:
             self.status_label.configure(
-                text="● Требуется обновление ассортимента",
+                text="Требуется обновление ассортимента",
                 text_color=("#d97706", "#f59e0b")
             )
 
@@ -298,14 +298,14 @@ class ShopTab(ctk.CTkFrame):
         seconds = diff % 60
 
         self.countdown_label.configure(
-            text=f"⏳ До обновления магазина: {hours:02d}ч {minutes:02d}м {seconds:02d}с"
+            text=f"До обновления магазина: {hours:02d}ч {minutes:02d}м {seconds:02d}с"
         )
 
         # Loop every second
         self.after(1000, self._update_countdown)
 
     def _refresh_shop(self):
-        self.refresh_btn.configure(state="disabled", text="⏳ ...")
+        self.refresh_btn.configure(state="disabled", text="Обновление...")
         self._update_status(fresh=False, message="Запрос к Riot Client...")
 
         threading.Thread(target=self._do_refresh_thread, daemon=True).start()
@@ -328,23 +328,23 @@ class ShopTab(ctk.CTkFrame):
                 self.after(0, lambda: self._on_refresh_failed(msg))
 
     def _on_refresh_success(self, skins: List[str], source: str):
-        self.refresh_btn.configure(state="normal", text="🔄 Обновить")
+        self.refresh_btn.configure(state="normal", text="Обновить")
         self._render_skins(skins, source)
         self._update_status(fresh=True, source=source)
         self._check_wishlist_matches(skins)
 
     def _on_refresh_fallback(self, skins: List[str], error_msg: str):
-        self.refresh_btn.configure(state="normal", text="🔄 Обновить")
+        self.refresh_btn.configure(state="normal", text="Обновить")
         self._render_skins(skins, "cache")
         self.status_label.configure(
-            text=f"ℹ️ {error_msg} (Показан сохраненный кэш)",
+            text=f"{error_msg} (Показан сохраненный кэш)",
             text_color=("gray40", "gray60")
         )
 
     def _on_refresh_failed(self, error_msg: str):
-        self.refresh_btn.configure(state="normal", text="🔄 Обновить")
+        self.refresh_btn.configure(state="normal", text="Обновить")
         self.status_label.configure(
-            text=f"⚠️ {error_msg}",
+            text=error_msg,
             text_color=("#dc2626", "#ef4444")
         )
 

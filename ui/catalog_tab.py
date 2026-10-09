@@ -77,7 +77,7 @@ class CatalogCard(ctk.CTkFrame):
         self.img_label.pack(padx=10, pady=(2, 6), fill="x")
 
         # Wishlist button
-        btn_text = "★ В вишлисте" if self.is_wishlist else "☆ Отслеживать"
+        btn_text = "В вишлисте" if self.is_wishlist else "Отслеживать"
         btn_fg = ("#FD4556", "#FD4556") if self.is_wishlist else ("gray85", "#27272a")
         btn_hover = ("#E03E4D", "#E03E4D") if self.is_wishlist else ("gray75", "#3f3f46")
         btn_text_color = "white" if self.is_wishlist else ("black", "white")
@@ -101,10 +101,10 @@ class CatalogCard(ctk.CTkFrame):
         new_state = self.on_toggle_callback(self.skin_uuid)
         self.is_wishlist = new_state
         if new_state:
-            self.btn.configure(text="★ В вишлисте", fg_color="#FD4556", hover_color="#E03E4D", text_color="white")
+            self.btn.configure(text="В вишлисте", fg_color="#FD4556", hover_color="#E03E4D", text_color="white")
             self.configure(border_color=("#FD4556", "#FD4556"), border_width=2, fg_color=("#FFF8F8", "#1e1315"))
         else:
-            self.btn.configure(text="☆ Отслеживать", fg_color=("gray85", "#27272a"), hover_color=("gray75", "#3f3f46"), text_color=("black", "white"))
+            self.btn.configure(text="Отслеживать", fg_color=("gray85", "#27272a"), hover_color=("gray75", "#3f3f46"), text_color=("black", "white"))
             self.configure(border_color=("gray85", "#27272a"), border_width=1, fg_color=("white", "#18181b"))
 
     def _load_image_async(self):
@@ -151,7 +151,7 @@ class CatalogTab(ctk.CTkFrame):
         # Search Box
         self.search_entry = ctk.CTkEntry(
             self.row1,
-            placeholder_text="🔍 Поиск по названию на русском или английском (Прайм, Reaver, Вандал...)",
+            placeholder_text="Поиск по названию на русском или английском (Прайм, Reaver, Вандал...)",
             height=38,
             corner_radius=8
         )
@@ -177,7 +177,7 @@ class CatalogTab(ctk.CTkFrame):
         self.only_wishlist_var = ctk.BooleanVar(value=False)
         self.only_wishlist_switch = ctk.CTkSwitch(
             self.row1,
-            text="⭐ Только вишлист",
+            text="Только вишлист",
             variable=self.only_wishlist_var,
             command=lambda: self._apply_filter(reset_page=True),
             font=ctk.CTkFont(size=12, weight="bold")
@@ -202,7 +202,7 @@ class CatalogTab(ctk.CTkFrame):
 
         self.prev_btn = ctk.CTkButton(
             self.page_frame,
-            text="◀ Назад",
+            text="Назад",
             width=70,
             height=28,
             corner_radius=6,
@@ -219,7 +219,7 @@ class CatalogTab(ctk.CTkFrame):
 
         self.next_btn = ctk.CTkButton(
             self.page_frame,
-            text="Вперед ▶",
+            text="Вперед",
             width=70,
             height=28,
             corner_radius=6,

@@ -64,7 +64,7 @@ class ValorantAlarmApp(ctk.CTk):
 
         title_lbl = ctk.CTkLabel(
             brand_frame,
-            text="🎯 VALORANT SKIN ALARM",
+            text="VALORANT SKIN ALARM",
             font=ctk.CTkFont(size=15, weight="bold"),
             text_color=("#FD4556", "#FD4556")
         )
@@ -77,7 +77,7 @@ class ValorantAlarmApp(ctk.CTk):
 
         user_badge = ctk.CTkLabel(
             self.top_bar,
-            text=f"👤 {name}#{tag}  [{region}]",
+            text=f"{name}#{tag}  [{region}]",
             font=ctk.CTkFont(size=12, weight="bold"),
             fg_color=("gray85", "#27272a"),
             corner_radius=6,
@@ -93,7 +93,7 @@ class ValorantAlarmApp(ctk.CTk):
         # Update banner button (hidden until update is detected)
         self.update_btn = ctk.CTkButton(
             right_frame,
-            text="✨ Обновление",
+            text="Обновление",
             width=120,
             height=28,
             corner_radius=6,
@@ -107,7 +107,7 @@ class ValorantAlarmApp(ctk.CTk):
         # Settings button
         settings_btn = ctk.CTkButton(
             right_frame,
-            text="⚙️ Настройки",
+            text="Настройки",
             width=95,
             height=28,
             corner_radius=6,
@@ -161,8 +161,8 @@ class ValorantAlarmApp(ctk.CTk):
         self.tabview = ctk.CTkTabview(self.container, corner_radius=12)
         self.tabview.pack(fill="both", expand=True, padx=12, pady=(4, 12))
 
-        tab_shop = self.tabview.add("🛒 Ассортимент магазина")
-        tab_catalog = self.tabview.add("📖 Каталог скинов")
+        tab_shop = self.tabview.add("Ассортимент магазина")
+        tab_catalog = self.tabview.add("Каталог скинов")
 
         # Populate Tabs
         self.shop_view = ShopTab(tab_shop, profile=self.profile)
@@ -181,11 +181,11 @@ class ValorantAlarmApp(ctk.CTk):
                 if card.skin_uuid == skin_uuid:
                     if is_in_wish:
                         card.is_wishlist = True
-                        card.fav_btn.configure(text="★ В вишлисте", fg_color="#FD4556", hover_color="#E03E4D", text_color="white")
+                        card.fav_btn.configure(text="В вишлисте", fg_color="#FD4556", hover_color="#E03E4D", text_color="white")
                         card.configure(border_color=("#FD4556", "#FD4556"), border_width=2)
                     else:
                         card.is_wishlist = False
-                        card.fav_btn.configure(text="☆ В вишлист", fg_color=("gray85", "#27272a"), hover_color=("gray75", "#3f3f46"), text_color=("black", "white"))
+                        card.fav_btn.configure(text="В вишлист", fg_color=("gray85", "#27272a"), hover_color=("gray75", "#3f3f46"), text_color=("black", "white"))
                         card.configure(border_color=("gray80", "#27272a"), border_width=1)
 
     def _toggle_autostart(self):
@@ -216,7 +216,7 @@ class ValorantAlarmApp(ctk.CTk):
 
     def _show_update_badge(self, info: dict):
         self.update_info = info
-        self.update_btn.configure(text=f"✨ v{info.get('version', '')}")
+        self.update_btn.configure(text=f"v{info.get('version', '')}")
         self.update_btn.pack(side="left", padx=5)
 
     def _on_update_clicked(self):
@@ -230,7 +230,7 @@ class ValorantAlarmApp(ctk.CTk):
 class SettingsDialog(ctk.CTkToplevel):
     def __init__(self, master):
         super().__init__(master)
-        self.title("⚙️ Настройки и Riot API")
+        self.title("Настройки и Riot API")
         self.geometry("520x460")
         self.resizable(False, False)
         self.attributes("-topmost", True)
@@ -246,7 +246,7 @@ class SettingsDialog(ctk.CTkToplevel):
         frame.pack(fill="both", expand=True, padx=24, pady=20)
 
         # Title
-        ctk.CTkLabel(frame, text="⚙️ Настройки программы", font=ctk.CTkFont(size=18, weight="bold")).pack(anchor="w", pady=(0, 14))
+        ctk.CTkLabel(frame, text="Настройки программы", font=ctk.CTkFont(size=18, weight="bold")).pack(anchor="w", pady=(0, 14))
 
         # API Key Section
         ctk.CTkLabel(frame, text="Riot Games API Ключ (.env):", font=ctk.CTkFont(size=13, weight="bold")).pack(anchor="w", pady=(4, 2))
@@ -275,14 +275,14 @@ class SettingsDialog(ctk.CTkToplevel):
             k = self.key_entry.get().strip()
             r = self.reg_var.get().strip()
             save_api_key_to_env(k, r)
-            self.status_lbl.configure(text="✅ Ключ успешно сохранен в .env!", text_color="#16a34a")
+            self.status_lbl.configure(text="Ключ успешно сохранен в .env", text_color="#16a34a")
 
-        save_btn = ctk.CTkButton(btn_row1, text="💾 Сохранить в .env", height=32, corner_radius=6, command=on_save_key)
+        save_btn = ctk.CTkButton(btn_row1, text="Сохранить в .env", height=32, corner_radius=6, command=on_save_key)
         save_btn.pack(side="left", padx=(0, 6), expand=True, fill="x")
 
         open_env_btn = ctk.CTkButton(
             btn_row1,
-            text="📝 Открыть .env",
+            text="Открыть .env",
             height=32,
             corner_radius=6,
             fg_color=("gray80", "#27272a"),
@@ -294,7 +294,7 @@ class SettingsDialog(ctk.CTkToplevel):
 
         get_key_btn = ctk.CTkButton(
             btn_row1,
-            text="🔗 Получить ключ",
+            text="Получить ключ",
             height=32,
             corner_radius=6,
             fg_color=("gray80", "#27272a"),
@@ -323,12 +323,12 @@ class SettingsDialog(ctk.CTkToplevel):
                 info = check_for_updates()
                 if info:
                     self.after(0, lambda: UpdateDialog(self.master, info))
-                    self.after(0, lambda: self.status_lbl.configure(text=f"Доступно обновление: {info['tag']}!", text_color="#16a34a"))
+                    self.after(0, lambda: self.status_lbl.configure(text=f"Доступно обновление: {info['tag']}", text_color="#16a34a"))
                 else:
                     self.after(0, lambda: self.status_lbl.configure(text="У вас установлена актуальная версия.", text_color=("gray40", "gray60")))
             threading.Thread(target=check_thread, daemon=True).start()
 
-        check_upd_btn = ctk.CTkButton(upd_row, text="🔄 Проверить обновление", height=30, width=170, corner_radius=6, command=on_manual_check_update)
+        check_upd_btn = ctk.CTkButton(upd_row, text="Проверить обновление", height=30, width=170, corner_radius=6, command=on_manual_check_update)
         check_upd_btn.pack(side="right")
 
         ctk.CTkFrame(frame, height=1, fg_color=("gray80", "#27272a")).pack(fill="x", pady=6)
@@ -343,11 +343,11 @@ class SettingsDialog(ctk.CTkToplevel):
             success, msg = uninstall_daemon()
             if hasattr(self.master, "autostart_var"):
                 self.master.autostart_var.set(False)
-            self.status_lbl.configure(text=f"🗑️ {msg}", text_color="#16a34a" if success else "#ef4444")
+            self.status_lbl.configure(text=msg, text_color="#16a34a" if success else "#ef4444")
 
         uninst_btn = ctk.CTkButton(
             uninst_row,
-            text="🗑️ Удалить демона из реестра",
+            text="Удалить демона из реестра",
             height=30,
             width=210,
             corner_radius=6,
@@ -363,7 +363,7 @@ class UpdateDialog(ctk.CTkToplevel):
     def __init__(self, master, update_info: dict):
         super().__init__(master)
         self.update_info = update_info
-        self.title("🚀 Обновление ValSkinAlarm")
+        self.title("Обновление ValSkinAlarm")
         self.geometry("480x360")
         self.resizable(False, False)
         self.attributes("-topmost", True)
@@ -373,7 +373,7 @@ class UpdateDialog(ctk.CTkToplevel):
 
         # Title
         tag = self.update_info.get("tag", "новое")
-        ctk.CTkLabel(frame, text=f"🎉 Доступно обновление {tag}!", font=ctk.CTkFont(size=18, weight="bold")).pack(anchor="w", pady=(0, 6))
+        ctk.CTkLabel(frame, text=f"Доступно обновление {tag}", font=ctk.CTkFont(size=18, weight="bold")).pack(anchor="w", pady=(0, 6))
 
         # Notes scroll
         notes_box = ctk.CTkTextbox(frame, height=150, corner_radius=8)
@@ -396,7 +396,7 @@ class UpdateDialog(ctk.CTkToplevel):
 
         self.start_btn = ctk.CTkButton(
             btns,
-            text="🚀 Скачать и обновить",
+            text="Скачать и обновить",
             height=36,
             corner_radius=6,
             fg_color="#16a34a",
@@ -433,7 +433,7 @@ class UpdateDialog(ctk.CTkToplevel):
             html_url = self.update_info.get("html_url")
             success, msg = download_and_install_update(dl_url, html_url, progress_callback=progress)
             if not success:
-                self.after(0, lambda: self.status_lbl.configure(text=f"⚠️ {msg}", text_color="#ef4444"))
+                self.after(0, lambda: self.status_lbl.configure(text=msg, text_color="#ef4444"))
                 self.after(0, lambda: self.start_btn.configure(state="normal", text="Повторить"))
 
         threading.Thread(target=worker, daemon=True).start()
