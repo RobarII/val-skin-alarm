@@ -27,7 +27,7 @@ CATALOG_CACHE_FILE = CACHE_DIR / "catalog.json"
 # App details
 APP_NAME = "VALORANT Skin Alarm"
 APP_SUBTITLE = "Будильник скинов Валорант"
-APP_VERSION = "1.0.5"
+APP_VERSION = "1.0.6"
 GITHUB_REPO = "RobarII/val-skin-alarm"
 
 # Daily store reset hour (local time cutoff, default 06:00)
