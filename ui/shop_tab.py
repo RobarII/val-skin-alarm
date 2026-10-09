@@ -299,7 +299,10 @@ class ShopTab(ctk.CTkFrame):
 
     def _do_refresh_thread(self):
         region = self.profile.get("region", "eu")
-        success, msg, store_data = fetch_live_storefront(region=region)
+        def on_status(text: str):
+            self.after(0, lambda: self._update_status(fresh=False, message=text))
+
+        success, msg, store_data = fetch_live_storefront(region=region, status_callback=on_status)
 
         if success and store_data:
             skins = store_data.get("skins", [])
