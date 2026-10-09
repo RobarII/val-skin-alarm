@@ -12,7 +12,6 @@ from storage import (
     is_shop_expired
 )
 from valorant_api import load_or_fetch_catalog, search_skins, get_skin_by_uuid
-from riot_client import generate_demo_storefront
 
 class TestValorantAlarm(unittest.TestCase):
     def setUp(self):
@@ -67,13 +66,6 @@ class TestValorantAlarm(unittest.TestCase):
         # Weapon filter
         vandal_results = search_skins(weapon_filter="Вандал (Vandal)")
         self.assertGreater(len(vandal_results), 50)
-
-    def test_demo_storefront_generation(self):
-        demo = generate_demo_storefront()
-        self.assertEqual(len(demo["skins"]), 4)
-        for s_uuid in demo["skins"]:
-            skin = get_skin_by_uuid(s_uuid)
-            self.assertIsNotNone(skin)
 
     def test_shop_expiration(self):
         # Empty cache is expired

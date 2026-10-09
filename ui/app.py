@@ -226,16 +226,26 @@ class ValorantAlarmApp(ctk.CTk):
         self.update_btn.pack(side="left", padx=5)
 
     def _on_update_clicked(self):
+        if hasattr(self, "update_dialog") and self.update_dialog and self.update_dialog.winfo_exists():
+            self.update_dialog.lift()
+            self.update_dialog.focus_force()
+            return
         if self.update_info:
-            UpdateDialog(self, self.update_info)
+            self.update_dialog = UpdateDialog(self, self.update_info)
 
     def _open_settings_dialog(self):
-        SettingsDialog(self)
+        if hasattr(self, "settings_dialog") and self.settings_dialog and self.settings_dialog.winfo_exists():
+            self.settings_dialog.lift()
+            self.settings_dialog.focus_force()
+            return
+        self.settings_dialog = SettingsDialog(self)
 
 
 class SettingsDialog(ctk.CTkToplevel):
     def __init__(self, master):
         super().__init__(master)
+        self.master.settings_dialog = self
+        self.protocol("WM_DELETE_WINDOW", self._on_close)
         self.title("Настройки")
         self.geometry("480x400")
         self.resizable(False, False)
@@ -348,6 +358,11 @@ class SettingsDialog(ctk.CTkToplevel):
             command=on_uninstall_daemon_click
         )
         uninst_btn.pack(side="right")
+
+    def _on_close(self):
+        if hasattr(self.master, "settings_dialog"):
+            self.master.settings_dialog = None
+        self.destroy()
 
 
 class UpdateDialog(ctk.CTkToplevel):

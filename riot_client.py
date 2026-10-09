@@ -1,7 +1,6 @@
 import os
 import sys
 import json
-import random
 import time
 import subprocess
 from datetime import datetime, timezone
@@ -90,27 +89,106 @@ def get_riot_client_lockfile_path() -> str:
         r"Riot Games\Riot Client\Config\lockfile"
     )
 
+def is_pid_alive(pid: int) -> bool:
+    """Verifies if given PID is currently active on the system."""
+    if pid <= 0:
+        return False
+    if sys.platform == "win32":
+        try:
+            import ctypes
+            kernel32 = ctypes.windll.kernel32
+            handle = kernel32.OpenProcess(0x1000, False, pid)
+            if handle:
+                kernel32.CloseHandle(handle)
+                return True
+            return False
+        except Exception:
+            return False
+    else:
+        try:
+            os.kill(pid, 0)
+            return True
+        except OSError:
+            return False
+
 def is_riot_client_running() -> bool:
-    """Checks if Riot Client lockfile exists and contains session data."""
+    """
+    Checks if Riot Client is actively running.
+    Inspects lockfile, verifies that the process PID is alive, and cleans stale files if dead.
+    """
     lock_path = get_riot_client_lockfile_path()
     if not os.path.isfile(lock_path):
         return False
     try:
         with open(lock_path, "r", encoding="utf-8") as f:
             content = f.read().strip()
-            # lockfile format: process_name:pid:port:password:protocol
-            return len(content.split(":")) >= 5
+        parts = content.split(":")
+        if len(parts) >= 5:
+            pid = int(parts[1])
+            if is_pid_alive(pid):
+                return True
+            else:
+                # Stale lockfile from previous dead session - remove to prevent false detection
+                try:
+                    os.remove(lock_path)
+                except Exception:
+                    pass
+                return False
     except Exception:
-        return False
+        pass
+    return False
+
+def launch_riot_client_process(exe_path: str) -> bool:
+    """
+    Launches RiotClientServices.exe in the user's interactive Windows session.
+    Cleans up any dead lockfile first, and uses CIM/WMI or os.startfile for detached execution.
+    """
+    lock_path = get_riot_client_lockfile_path()
+    if os.path.isfile(lock_path):
+        try:
+            os.remove(lock_path)
+        except Exception:
+            pass
+
+    exe_dir = os.path.dirname(exe_path)
+
+    # Method 1: Launch via WMI/CIM in interactive desktop session
+    if sys.platform == "win32":
+        try:
+            cmd = [
+                "powershell", "-NoProfile", "-WindowStyle", "Hidden", "-Command",
+                f"$res = Invoke-CimMethod -ClassName Win32_Process -MethodName Create -Arguments @{{ CommandLine = '\"{exe_path}\"'; CurrentDirectory = '{exe_dir}' }}; exit $res.ReturnValue"
+            ]
+            creationflags = 0x08000000 if hasattr(subprocess, "CREATE_NO_WINDOW") else 0
+            ret = subprocess.call(cmd, creationflags=creationflags)
+            if ret == 0:
+                return True
+        except Exception:
+            pass
+
+        # Method 2: Fallback to os.startfile
+        try:
+            os.startfile(exe_path)
+            return True
+        except Exception:
+            pass
+
+    # Method 3: Standard subprocess fallback
+    try:
+        flags = subprocess.CREATE_NEW_PROCESS_GROUP if sys.platform == "win32" else 0
+        subprocess.Popen([exe_path], cwd=exe_dir, creationflags=flags)
+        return True
+    except Exception:
+        pass
+
+    return False
 
 def ensure_riot_client_running(
     timeout_seconds: int = 20,
     status_callback: Optional[Callable[[str], None]] = None
 ) -> Tuple[bool, str]:
     """
-    Ensures Riot Client is running in the background/system tray.
-    If not running, autonomously launches RiotClientServices.exe with --launch-background-mode
-    and waits for the session lockfile to initialize.
+    Ensures Riot Client is active. If not running, launches it in the system tray and waits for lockfile.
     """
     if is_riot_client_running():
         return True, "Riot Client уже запущен"
@@ -120,35 +198,22 @@ def ensure_riot_client_running(
         return False, "Riot Client не найден на компьютере"
 
     if status_callback:
-        status_callback("Запуск Riot Client в трее...")
+        status_callback("Запуск Riot Client...")
 
-    try:
-        startupinfo = None
-        creationflags = 0
-        if sys.platform == "win32":
-            startupinfo = subprocess.STARTUPINFO()
-            startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-            startupinfo.wShowWindow = 0  # SW_HIDE
-            creationflags = subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP
+    success = launch_riot_client_process(exe_path)
+    if not success:
+        return False, "Не удалось запустить процесс Riot Client"
 
-        subprocess.Popen(
-            [exe_path, "--launch-background-mode"],
-            startupinfo=startupinfo,
-            creationflags=creationflags
-        )
-    except Exception as e:
-        return False, f"Ошибка запуска Riot Client: {e}"
-
-    # Wait for lockfile to be created
+    # Wait for lockfile to be generated by the running client
     start_time = time.time()
     while time.time() - start_time < timeout_seconds:
         if is_riot_client_running():
-            # Give internal server a brief moment to initialize port
-            time.sleep(1.0)
-            return True, "Riot Client успешно запущен в трее"
+            # Allow webserver port a brief moment to finish binding
+            time.sleep(1.5)
+            return True, "Riot Client успешно запущен"
         time.sleep(0.5)
 
-    return False, "Таймаут инициализации Riot Client"
+    return False, "Таймаут ожидания запуска Riot Client"
 
 def detect_current_player(region: str = "eu") -> Optional[Dict[str, str]]:
     """
@@ -179,7 +244,7 @@ def fetch_live_storefront(
 ) -> Tuple[bool, str, Optional[Dict[str, Any]]]:
     """
     Fetches the player's personal daily storefront via local Riot Client session.
-    If auto_launch is True and Riot Client is closed, automatically starts it in the tray.
+    If auto_launch is True and Riot Client is closed, automatically starts it.
     """
     if not is_riot_client_running():
         if auto_launch:
@@ -267,41 +332,3 @@ def fetch_live_storefront(
 
     except Exception as e:
         return False, f"Ошибка подключения к Riot Client: {e}", None
-
-def generate_demo_storefront(include_wishlist_chance: bool = True) -> Dict[str, Any]:
-    """
-    Generates a demo 4-skin storefront for testing notifications and UI without the game running.
-    """
-    catalog = load_or_fetch_catalog()
-    all_skins = catalog.get("skins", [])
-    if not all_skins:
-        return {"skins": [], "expires_at": None, "source": "demo"}
-
-    wishlist = load_wishlist()
-    selected_uuids = []
-
-    # If wishlist has items and chance is enabled, include at least one wishlist skin to trigger alarm
-    if wishlist and include_wishlist_chance:
-        wishlist_list = list(wishlist)
-        random.shuffle(wishlist_list)
-        for w_uuid in wishlist_list:
-            if get_skin_by_uuid(w_uuid):
-                selected_uuids.append(w_uuid)
-                break
-
-    # Pick random skins to make 4 total
-    available_skins = [s["uuid"] for s in all_skins if s["uuid"] not in selected_uuids]
-    random.shuffle(available_skins)
-
-    while len(selected_uuids) < 4 and available_skins:
-        selected_uuids.append(available_skins.pop())
-
-    now_ts = datetime.now(timezone.utc).timestamp()
-    expires_at = now_ts + 86400
-
-    return {
-        "skins": selected_uuids,
-        "expires_at": expires_at,
-        "duration_seconds": 86400,
-        "source": "demo"
-    }

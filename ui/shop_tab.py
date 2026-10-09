@@ -17,7 +17,7 @@ from storage import (
     mark_shop_notified
 )
 from valorant_api import get_skin_by_uuid, download_skin_image, get_cached_image_path
-from riot_client import fetch_live_storefront, generate_demo_storefront
+from riot_client import fetch_live_storefront
 from notifier import notify_wishlist_match, send_test_notification
 
 class ShopCard(ctk.CTkFrame):
@@ -202,19 +202,6 @@ class ShopTab(ctk.CTkFrame):
         )
         self.refresh_btn.pack(side="left", padx=4)
 
-        self.demo_btn = ctk.CTkButton(
-            self.actions_frame,
-            text="Демо-магазин",
-            width=120,
-            height=34,
-            corner_radius=6,
-            fg_color=("gray80", "#27272a"),
-            hover_color=("gray70", "#3f3f46"),
-            text_color=("black", "white"),
-            command=self._generate_demo
-        )
-        self.demo_btn.pack(side="left", padx=4)
-
         self.test_toast_btn = ctk.CTkButton(
             self.actions_frame,
             text="Тест",
@@ -241,7 +228,7 @@ class ShopTab(ctk.CTkFrame):
 
         self.empty_label = ctk.CTkLabel(
             self.cards_grid,
-            text="Нажмите 'Обновить' или 'Демо-магазин' для отображения скинов.",
+            text="Нажмите 'Обновить' для отображения скинов.",
             font=ctk.CTkFont(size=14),
             text_color=("gray50", "gray50")
         )
@@ -262,7 +249,7 @@ class ShopTab(ctk.CTkFrame):
             return
 
         if fresh:
-            src_str = "Riot Client" if source == "riot_client" else ("Демо-режим" if source == "demo" else "Кэш")
+            src_str = "Riot Client" if source == "riot_client" else "Кэш"
             self.status_label.configure(
                 text=f"Магазин актуален на сегодня ({src_str})",
                 text_color=("#16a34a", "#22c55e")
@@ -347,14 +334,6 @@ class ShopTab(ctk.CTkFrame):
             text=error_msg,
             text_color=("#dc2626", "#ef4444")
         )
-
-    def _generate_demo(self):
-        demo_store = generate_demo_storefront(include_wishlist_chance=True)
-        skins = demo_store.get("skins", [])
-        save_shop_cache(skins, expires_at=demo_store.get("expires_at"), source="demo")
-        self._render_skins(skins, "demo")
-        self._update_status(fresh=True, source="demo")
-        self._check_wishlist_matches(skins)
 
     def _render_skins(self, skin_uuids: List[str], source: str):
         # Clear existing
