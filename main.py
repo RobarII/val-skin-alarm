@@ -13,8 +13,33 @@ def main():
         action="store_true",
         help="Отправить тестовое уведомление Windows и выйти"
     )
+    parser.add_argument(
+        "--uninstall", "-u",
+        action="store_true",
+        help="Удалить демона из автозагрузки Windows (реестра)"
+    )
+    parser.add_argument(
+        "--check-update",
+        action="store_true",
+        help="Проверить наличие обновлений на GitHub и выйти"
+    )
 
     args = parser.parse_args()
+
+    if args.uninstall:
+        from autostart import uninstall_daemon
+        success, msg = uninstall_daemon()
+        print(f"[ValSkinAlarm] {msg}")
+        return 0 if success else 1
+
+    if args.check_update:
+        from updater import check_for_updates
+        info = check_for_updates()
+        if info:
+            print(f"[ValSkinAlarm] Доступна новая версия {info['tag']}! Скачать: {info['html_url']}")
+        else:
+            print("[ValSkinAlarm] У вас установлена последняя версия.")
+        return 0
 
     if args.test_toast:
         from notifier import send_test_notification

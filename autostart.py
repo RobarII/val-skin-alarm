@@ -57,3 +57,11 @@ def set_autostart(enable: bool) -> bool:
     except Exception as e:
         print(f"Error updating autostart registry: {e}")
         return False
+
+def uninstall_daemon() -> tuple[bool, str]:
+    """Completely removes the daemon from Windows startup registry."""
+    success = set_autostart(False)
+    if success:
+        return True, "Демон успешно удален из автозагрузки Windows."
+    else:
+        return False, "Не удалось удалить запись из реестра Windows."

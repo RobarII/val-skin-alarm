@@ -90,34 +90,63 @@ class ValorantAlarmApp(ctk.CTk):
         right_frame = ctk.CTkFrame(self.top_bar, fg_color="transparent")
         right_frame.pack(side="right", padx=16, pady=8)
 
+        # Update banner button (hidden until update is detected)
+        self.update_btn = ctk.CTkButton(
+            right_frame,
+            text="✨ Обновление",
+            width=120,
+            height=28,
+            corner_radius=6,
+            fg_color="#16a34a",
+            hover_color="#15803d",
+            font=ctk.CTkFont(size=11, weight="bold"),
+            command=self._on_update_clicked
+        )
+        self.update_info = None
+
+        # Settings button
+        settings_btn = ctk.CTkButton(
+            right_frame,
+            text="⚙️ Настройки",
+            width=95,
+            height=28,
+            corner_radius=6,
+            fg_color=("gray80", "#27272a"),
+            hover_color=("gray70", "#3f3f46"),
+            text_color=("black", "white"),
+            font=ctk.CTkFont(size=11),
+            command=self._open_settings_dialog
+        )
+        settings_btn.pack(side="left", padx=5)
+
         # Autostart switch
         self.autostart_var = ctk.BooleanVar(value=is_autostart_enabled())
         self.autostart_switch = ctk.CTkSwitch(
             right_frame,
-            text="Демон при старте Windows",
+            text="Демон",
             variable=self.autostart_var,
             command=self._toggle_autostart,
             font=ctk.CTkFont(size=11)
         )
-        self.autostart_switch.pack(side="left", padx=8)
+        self.autostart_switch.pack(side="left", padx=5)
 
         # Theme selector
         self.theme_menu = ctk.CTkOptionMenu(
             right_frame,
             values=["Системная", "Темная", "Светлая"],
             command=self._change_theme,
-            width=110,
+            width=100,
             height=28,
             corner_radius=6,
             font=ctk.CTkFont(size=11)
         )
-        self.theme_menu.pack(side="left", padx=6)
+        self.theme_menu.pack(side="left", padx=5)
 
         # Logout / Switch profile button
         logout_btn = ctk.CTkButton(
             right_frame,
-            text="Сменить аккаунт",
-            width=110,
+            text="Выйти",
+            width=70,
             height=28,
             corner_radius=6,
             fg_color=("gray80", "#27272a"),
@@ -126,7 +155,7 @@ class ValorantAlarmApp(ctk.CTk):
             font=ctk.CTkFont(size=11),
             command=self._logout
         )
-        logout_btn.pack(side="left", padx=6)
+        logout_btn.pack(side="left", padx=5)
 
         # Main Tabs
         self.tabview = ctk.CTkTabview(self.container, corner_radius=12)
@@ -141,6 +170,9 @@ class ValorantAlarmApp(ctk.CTk):
 
         self.catalog_view = CatalogTab(tab_catalog, on_wishlist_change=self._on_wishlist_changed)
         self.catalog_view.pack(fill="both", expand=True)
+
+        # Background update check
+        self.after(1000, self._check_update_background)
 
     def _on_wishlist_changed(self, skin_uuid: str, is_in_wish: bool):
         # Refresh shop cards wishlist highlighting if visible
@@ -172,3 +204,236 @@ class ValorantAlarmApp(ctk.CTk):
         clear_profile()
         self.profile = None
         self._show_appropriate_view()
+
+    def _check_update_background(self):
+        import threading
+        from updater import check_for_updates
+        def worker():
+            info = check_for_updates()
+            if info:
+                self.after(0, lambda: self._show_update_badge(info))
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _show_update_badge(self, info: dict):
+        self.update_info = info
+        self.update_btn.configure(text=f"✨ v{info.get('version', '')}")
+        self.update_btn.pack(side="left", padx=5)
+
+    def _on_update_clicked(self):
+        if self.update_info:
+            UpdateDialog(self, self.update_info)
+
+    def _open_settings_dialog(self):
+        SettingsDialog(self)
+
+
+class SettingsDialog(ctk.CTkToplevel):
+    def __init__(self, master):
+        super().__init__(master)
+        self.title("⚙️ Настройки и Riot API")
+        self.geometry("520x460")
+        self.resizable(False, False)
+        self.attributes("-topmost", True)
+
+        from config import RIOT_API_KEY, RIOT_REGION, reload_env, open_env_in_editor, save_api_key_to_env, APP_VERSION
+        from autostart import uninstall_daemon, is_autostart_enabled
+        from updater import check_for_updates
+        import webbrowser
+        reload_env()
+
+        # Frame
+        frame = ctk.CTkFrame(self, corner_radius=12, fg_color="transparent")
+        frame.pack(fill="both", expand=True, padx=24, pady=20)
+
+        # Title
+        ctk.CTkLabel(frame, text="⚙️ Настройки программы", font=ctk.CTkFont(size=18, weight="bold")).pack(anchor="w", pady=(0, 14))
+
+        # API Key Section
+        ctk.CTkLabel(frame, text="Riot Games API Ключ (.env):", font=ctk.CTkFont(size=13, weight="bold")).pack(anchor="w", pady=(4, 2))
+        self.key_entry = ctk.CTkEntry(frame, placeholder_text="RGAPI-xxxx-xxxx-xxxx-xxxx", height=36, corner_radius=8)
+        if RIOT_API_KEY:
+            self.key_entry.insert(0, RIOT_API_KEY)
+        self.key_entry.pack(fill="x", pady=(0, 6))
+
+        # Region
+        ctk.CTkLabel(frame, text="Регион аккаунта:", font=ctk.CTkFont(size=12)).pack(anchor="w")
+        self.reg_var = ctk.StringVar(value=RIOT_REGION or "europe")
+        self.reg_menu = ctk.CTkOptionMenu(
+            frame,
+            values=["europe", "americas", "asia", "esports"],
+            variable=self.reg_var,
+            height=32,
+            corner_radius=6
+        )
+        self.reg_menu.pack(fill="x", pady=(2, 10))
+
+        # Action Buttons row 1
+        btn_row1 = ctk.CTkFrame(frame, fg_color="transparent")
+        btn_row1.pack(fill="x", pady=(0, 12))
+
+        def on_save_key():
+            k = self.key_entry.get().strip()
+            r = self.reg_var.get().strip()
+            save_api_key_to_env(k, r)
+            self.status_lbl.configure(text="✅ Ключ успешно сохранен в .env!", text_color="#16a34a")
+
+        save_btn = ctk.CTkButton(btn_row1, text="💾 Сохранить в .env", height=32, corner_radius=6, command=on_save_key)
+        save_btn.pack(side="left", padx=(0, 6), expand=True, fill="x")
+
+        open_env_btn = ctk.CTkButton(
+            btn_row1,
+            text="📝 Открыть .env",
+            height=32,
+            corner_radius=6,
+            fg_color=("gray80", "#27272a"),
+            hover_color=("gray70", "#3f3f46"),
+            text_color=("black", "white"),
+            command=open_env_in_editor
+        )
+        open_env_btn.pack(side="left", padx=6, expand=True, fill="x")
+
+        get_key_btn = ctk.CTkButton(
+            btn_row1,
+            text="🔗 Получить ключ",
+            height=32,
+            corner_radius=6,
+            fg_color=("gray80", "#27272a"),
+            hover_color=("gray70", "#3f3f46"),
+            text_color=("black", "white"),
+            command=lambda: webbrowser.open("https://developer.riotgames.com/")
+        )
+        get_key_btn.pack(side="left", padx=(6, 0), expand=True, fill="x")
+
+        # Status label
+        self.status_lbl = ctk.CTkLabel(frame, text="", font=ctk.CTkFont(size=12))
+        self.status_lbl.pack(fill="x", pady=(0, 8))
+
+        ctk.CTkFrame(frame, height=1, fg_color=("gray80", "#27272a")).pack(fill="x", pady=6)
+
+        # Section 2: Updates
+        upd_row = ctk.CTkFrame(frame, fg_color="transparent")
+        upd_row.pack(fill="x", pady=6)
+
+        ctk.CTkLabel(upd_row, text=f"Версия программы: v{APP_VERSION}", font=ctk.CTkFont(size=12, weight="bold")).pack(side="left")
+
+        def on_manual_check_update():
+            self.status_lbl.configure(text="Проверка обновлений...", text_color=("gray40", "gray60"))
+            import threading
+            def check_thread():
+                info = check_for_updates()
+                if info:
+                    self.after(0, lambda: UpdateDialog(self.master, info))
+                    self.after(0, lambda: self.status_lbl.configure(text=f"Доступно обновление: {info['tag']}!", text_color="#16a34a"))
+                else:
+                    self.after(0, lambda: self.status_lbl.configure(text="У вас установлена актуальная версия.", text_color=("gray40", "gray60")))
+            threading.Thread(target=check_thread, daemon=True).start()
+
+        check_upd_btn = ctk.CTkButton(upd_row, text="🔄 Проверить обновление", height=30, width=170, corner_radius=6, command=on_manual_check_update)
+        check_upd_btn.pack(side="right")
+
+        ctk.CTkFrame(frame, height=1, fg_color=("gray80", "#27272a")).pack(fill="x", pady=6)
+
+        # Section 3: Uninstall daemon
+        uninst_row = ctk.CTkFrame(frame, fg_color="transparent")
+        uninst_row.pack(fill="x", pady=(4, 0))
+
+        ctk.CTkLabel(uninst_row, text="Автозагрузка демона:", font=ctk.CTkFont(size=12, weight="bold")).pack(side="left")
+
+        def on_uninstall_daemon_click():
+            success, msg = uninstall_daemon()
+            if hasattr(self.master, "autostart_var"):
+                self.master.autostart_var.set(False)
+            self.status_lbl.configure(text=f"🗑️ {msg}", text_color="#16a34a" if success else "#ef4444")
+
+        uninst_btn = ctk.CTkButton(
+            uninst_row,
+            text="🗑️ Удалить демона из реестра",
+            height=30,
+            width=210,
+            corner_radius=6,
+            fg_color=("#fee2e2", "#3b171a"),
+            hover_color=("#fecaca", "#4c1d22"),
+            text_color=("#dc2626", "#f87171"),
+            command=on_uninstall_daemon_click
+        )
+        uninst_btn.pack(side="right")
+
+
+class UpdateDialog(ctk.CTkToplevel):
+    def __init__(self, master, update_info: dict):
+        super().__init__(master)
+        self.update_info = update_info
+        self.title("🚀 Обновление ValSkinAlarm")
+        self.geometry("480x360")
+        self.resizable(False, False)
+        self.attributes("-topmost", True)
+
+        frame = ctk.CTkFrame(self, corner_radius=12, fg_color="transparent")
+        frame.pack(fill="both", expand=True, padx=24, pady=20)
+
+        # Title
+        tag = self.update_info.get("tag", "новое")
+        ctk.CTkLabel(frame, text=f"🎉 Доступно обновление {tag}!", font=ctk.CTkFont(size=18, weight="bold")).pack(anchor="w", pady=(0, 6))
+
+        # Notes scroll
+        notes_box = ctk.CTkTextbox(frame, height=150, corner_radius=8)
+        notes_box.pack(fill="both", expand=True, pady=(4, 12))
+        notes_text = self.update_info.get("notes") or "Новые улучшения и исправления ошибок."
+        notes_box.insert("1.0", notes_text)
+        notes_box.configure(state="disabled")
+
+        # Progress bar
+        self.progress_bar = ctk.CTkProgressBar(frame, height=10, corner_radius=5)
+        self.progress_bar.set(0)
+        self.progress_bar.pack(fill="x", pady=(0, 6))
+
+        self.status_lbl = ctk.CTkLabel(frame, text="Готово к загрузке", font=ctk.CTkFont(size=12), text_color=("gray40", "gray60"))
+        self.status_lbl.pack(fill="x", pady=(0, 10))
+
+        # Buttons
+        btns = ctk.CTkFrame(frame, fg_color="transparent")
+        btns.pack(fill="x")
+
+        self.start_btn = ctk.CTkButton(
+            btns,
+            text="🚀 Скачать и обновить",
+            height=36,
+            corner_radius=6,
+            fg_color="#16a34a",
+            hover_color="#15803d",
+            command=self._start_download
+        )
+        self.start_btn.pack(side="left", expand=True, fill="x", padx=(0, 6))
+
+        cancel_btn = ctk.CTkButton(
+            btns,
+            text="Отмена",
+            height=36,
+            corner_radius=6,
+            fg_color=("gray80", "#27272a"),
+            hover_color=("gray70", "#3f3f46"),
+            text_color=("black", "white"),
+            command=self.destroy
+        )
+        cancel_btn.pack(side="left", padx=(6, 0), width=100)
+
+    def _start_download(self):
+        self.start_btn.configure(state="disabled", text="Загрузка...")
+        self.status_lbl.configure(text="Подключение к серверу...")
+
+        import threading
+        from updater import download_and_install_update
+
+        def progress(pct, msg):
+            self.after(0, lambda: self.progress_bar.set(pct))
+            self.after(0, lambda: self.status_lbl.configure(text=msg))
+
+        def worker():
+            dl_url = self.update_info.get("download_url")
+            html_url = self.update_info.get("html_url")
+            success, msg = download_and_install_update(dl_url, html_url, progress_callback=progress)
+            if not success:
+                self.after(0, lambda: self.status_lbl.configure(text=f"⚠️ {msg}", text_color="#ef4444"))
+                self.after(0, lambda: self.start_btn.configure(state="normal", text="Повторить"))
+
+        threading.Thread(target=worker, daemon=True).start()
