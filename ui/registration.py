@@ -114,20 +114,17 @@ class RegistrationFrame(ctk.CTkFrame):
     def _try_auto_detect_player(self):
         def worker():
             if is_riot_client_running():
-                data = detect_current_player()
+                data = detect_current_player(auto_launch=False, timeout_seconds=3.0)
                 if data and data.get("game_name"):
                     self.after(0, lambda: self._apply_detected_data(data))
         threading.Thread(target=worker, daemon=True).start()
 
     def _on_detect_clicked(self):
-        self.detect_btn.configure(state="disabled", text="Поиск сессии Riot Client...")
+        self.detect_btn.configure(state="disabled", text="Поиск аккаунта в Riot Client...")
         self.status_label.configure(text="Подключение к Riot Client...", text_color=("gray40", "gray60"))
 
         def worker():
-            if not is_riot_client_running():
-                ensure_riot_client_running(timeout_seconds=15)
-
-            data = detect_current_player()
+            data = detect_current_player(auto_launch=True, timeout_seconds=15.0)
             def update_ui():
                 self.detect_btn.configure(state="normal", text="Определить автоматически из Riot Client")
                 if data and data.get("game_name"):
@@ -176,6 +173,13 @@ class RegistrationFrame(ctk.CTkFrame):
             region_code = "kr"
 
         puuid = self.detected_puuid
+        if not puuid:
+            try:
+                detected = detect_current_player(region=region_code, auto_launch=False, timeout_seconds=2.0)
+                if detected and detected.get("puuid") and detected.get("game_name", "").lower() == name.lower():
+                    puuid = detected.get("puuid")
+            except Exception:
+                pass
         if not puuid:
             import hashlib
             puuid = hashlib.sha256(f"{name}#{tag}".encode()).hexdigest()[:36]

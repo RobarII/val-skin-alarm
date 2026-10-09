@@ -420,25 +420,98 @@ def get_authenticated_session(
 
     return True, "Авторизация успешна", session_info
 
-def detect_current_player(region: str = "eu") -> Optional[Dict[str, str]]:
+def detect_current_player(
+    region: str = "eu",
+    auto_launch: bool = True,
+    timeout_seconds: float = 12.0
+) -> Optional[Dict[str, str]]:
     """
-    Attempts to read player game name, tag and PUUID from active Riot Client session.
+    Instantly detects player game name, tag line, and PUUID from active Riot Client session.
+    Queries local Riot Client chat/alias endpoints directly in milliseconds without waiting for store tokens.
     """
-    if not is_riot_client_running():
+    lock_data = read_lockfile_data()
+    if not lock_data:
+        if auto_launch:
+            launched, _ = ensure_riot_client_running(timeout_seconds=12)
+            if not launched:
+                return None
+            lock_data = read_lockfile_data()
+        else:
+            return None
+
+    if not lock_data:
         return None
 
-    success, _, session = get_authenticated_session(
-        region=region,
-        auto_launch=False,
-        timeout_seconds=4.0
-    )
-    if success and session:
-        return {
-            "game_name": session["player_name"],
-            "tag_line": session["player_tag"],
-            "puuid": session["puuid"],
-            "region": region
-        }
+    start_time = time.time()
+    while time.time() - start_time < timeout_seconds:
+        fresh_lock = read_lockfile_data()
+        if fresh_lock:
+            port = fresh_lock["port"]
+            auth_b64 = base64.b64encode(f"riot:{fresh_lock['password']}".encode()).decode()
+            headers = {"Authorization": f"Basic {auth_b64}"}
+
+            game_name = ""
+            tag_line = ""
+            puuid = ""
+
+            # Method 1: /chat/v1/session (contains game_name, game_tag, and puuid)
+            try:
+                resp = requests.get(
+                    f"https://127.0.0.1:{port}/chat/v1/session",
+                    headers=headers,
+                    verify=False,
+                    timeout=1.0
+                )
+                if resp.status_code == 200:
+                    data = resp.json()
+                    game_name = data.get("game_name", "")
+                    tag_line = data.get("game_tag", "")
+                    puuid = data.get("puuid", "")
+            except Exception:
+                pass
+
+            # Method 2: /player-account/aliases/v1/active (if name/tag still missing)
+            if not game_name or not tag_line:
+                try:
+                    resp = requests.get(
+                        f"https://127.0.0.1:{port}/player-account/aliases/v1/active",
+                        headers=headers,
+                        verify=False,
+                        timeout=1.0
+                    )
+                    if resp.status_code == 200:
+                        data = resp.json()
+                        game_name = data.get("game_name", game_name)
+                        tag_line = data.get("tag_line", tag_line)
+                except Exception:
+                    pass
+
+            # Method 3: /rso-auth/v1/authorization (for PUUID if missing)
+            if not puuid:
+                try:
+                    resp = requests.get(
+                        f"https://127.0.0.1:{port}/rso-auth/v1/authorization",
+                        headers=headers,
+                        verify=False,
+                        timeout=1.0
+                    )
+                    if resp.status_code == 200:
+                        data = resp.json()
+                        puuid = data.get("subject", "")
+                except Exception:
+                    pass
+
+            if game_name and tag_line:
+                minimize_riot_client_windows()
+                return {
+                    "game_name": game_name,
+                    "tag_line": tag_line,
+                    "puuid": puuid,
+                    "region": region
+                }
+
+        time.sleep(0.3)
+
     return None
 
 def fetch_live_storefront(
