@@ -1,0 +1,19 @@
+# Environment variables & secrets
+.env
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.spec
+build/
+dist/
+
+# Cache & Local Data
+cache/
+data/
+
+# Virtual Environment
+venv/
+.venv/
+env/
