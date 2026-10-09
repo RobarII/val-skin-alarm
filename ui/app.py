@@ -29,6 +29,12 @@ class ValorantAlarmApp(ctk.CTk):
         self.container.pack(fill="both", expand=True)
 
         self._show_appropriate_view()
+        import threading
+        threading.Thread(target=self._ensure_client_started, daemon=True).start()
+
+    def _ensure_client_started(self):
+        from riot_client import ensure_riot_client_running
+        ensure_riot_client_running(timeout_seconds=20)
 
     def _show_appropriate_view(self):
         # Clear container
@@ -230,16 +236,15 @@ class ValorantAlarmApp(ctk.CTk):
 class SettingsDialog(ctk.CTkToplevel):
     def __init__(self, master):
         super().__init__(master)
-        self.title("Настройки и Riot API")
-        self.geometry("520x460")
+        self.title("Настройки")
+        self.geometry("480x400")
         self.resizable(False, False)
         self.attributes("-topmost", True)
 
-        from config import RIOT_API_KEY, RIOT_REGION, reload_env, open_env_in_editor, save_api_key_to_env, APP_VERSION
-        from autostart import uninstall_daemon, is_autostart_enabled
+        from config import APP_VERSION
+        from autostart import uninstall_daemon
         from updater import check_for_updates
-        import webbrowser
-        reload_env()
+        from riot_client import is_riot_client_running, ensure_riot_client_running
 
         # Frame
         frame = ctk.CTkFrame(self, corner_radius=12, fg_color="transparent")
@@ -248,65 +253,51 @@ class SettingsDialog(ctk.CTkToplevel):
         # Title
         ctk.CTkLabel(frame, text="Настройки программы", font=ctk.CTkFont(size=18, weight="bold")).pack(anchor="w", pady=(0, 14))
 
-        # API Key Section
-        ctk.CTkLabel(frame, text="Riot Games API Ключ (.env):", font=ctk.CTkFont(size=13, weight="bold")).pack(anchor="w", pady=(4, 2))
-        self.key_entry = ctk.CTkEntry(frame, placeholder_text="RGAPI-xxxx-xxxx-xxxx-xxxx", height=36, corner_radius=8)
-        if RIOT_API_KEY:
-            self.key_entry.insert(0, RIOT_API_KEY)
-        self.key_entry.pack(fill="x", pady=(0, 6))
+        # Profile info
+        profile = getattr(self.master, "profile", {}) or {}
+        name = profile.get("game_name", "Игрок")
+        tag = profile.get("tag_line", "0000")
+        region = profile.get("region", "eu").upper()
 
-        # Region
-        ctk.CTkLabel(frame, text="Регион аккаунта:", font=ctk.CTkFont(size=12)).pack(anchor="w")
-        self.reg_var = ctk.StringVar(value=RIOT_REGION or "europe")
-        self.reg_menu = ctk.CTkOptionMenu(
-            frame,
-            values=["europe", "americas", "asia", "esports"],
-            variable=self.reg_var,
-            height=32,
-            corner_radius=6
-        )
-        self.reg_menu.pack(fill="x", pady=(2, 10))
+        profile_box = ctk.CTkFrame(frame, fg_color=("gray85", "#27272a"), corner_radius=8)
+        profile_box.pack(fill="x", pady=(0, 10), padx=0)
+        ctk.CTkLabel(
+            profile_box,
+            text=f"Аккаунт: {name}#{tag}  (Регион: {region})",
+            font=ctk.CTkFont(size=13, weight="bold")
+        ).pack(padx=12, pady=10, anchor="w")
 
-        # Action Buttons row 1
-        btn_row1 = ctk.CTkFrame(frame, fg_color="transparent")
-        btn_row1.pack(fill="x", pady=(0, 12))
+        # Section 1: Riot Client status
+        rc_row = ctk.CTkFrame(frame, fg_color="transparent")
+        rc_row.pack(fill="x", pady=(4, 8))
 
-        def on_save_key():
-            k = self.key_entry.get().strip()
-            r = self.reg_var.get().strip()
-            save_api_key_to_env(k, r)
-            self.status_lbl.configure(text="Ключ успешно сохранен в .env", text_color="#16a34a")
+        is_running = is_riot_client_running()
+        status_text = "Riot Client: активен" if is_running else "Riot Client: не запущен"
+        status_color = "#16a34a" if is_running else ("gray50", "gray50")
 
-        save_btn = ctk.CTkButton(btn_row1, text="Сохранить в .env", height=32, corner_radius=6, command=on_save_key)
-        save_btn.pack(side="left", padx=(0, 6), expand=True, fill="x")
+        self.rc_status_lbl = ctk.CTkLabel(rc_row, text=status_text, text_color=status_color, font=ctk.CTkFont(size=12, weight="bold"))
+        self.rc_status_lbl.pack(side="left")
 
-        open_env_btn = ctk.CTkButton(
-            btn_row1,
-            text="Открыть .env",
-            height=32,
-            corner_radius=6,
-            fg_color=("gray80", "#27272a"),
-            hover_color=("gray70", "#3f3f46"),
-            text_color=("black", "white"),
-            command=open_env_in_editor
-        )
-        open_env_btn.pack(side="left", padx=6, expand=True, fill="x")
+        def on_launch_rc():
+            self.status_lbl.configure(text="Запуск Riot Client в трее...", text_color=("gray40", "gray60"))
+            import threading
+            def worker():
+                ok, msg = ensure_riot_client_running(timeout_seconds=20)
+                def finish():
+                    if ok:
+                        self.rc_status_lbl.configure(text="Riot Client: активен", text_color="#16a34a")
+                        self.status_lbl.configure(text="Riot Client запущен в трее", text_color="#16a34a")
+                    else:
+                        self.status_lbl.configure(text=msg, text_color="#ef4444")
+                self.after(0, finish)
+            threading.Thread(target=worker, daemon=True).start()
 
-        get_key_btn = ctk.CTkButton(
-            btn_row1,
-            text="Получить ключ",
-            height=32,
-            corner_radius=6,
-            fg_color=("gray80", "#27272a"),
-            hover_color=("gray70", "#3f3f46"),
-            text_color=("black", "white"),
-            command=lambda: webbrowser.open("https://developer.riotgames.com/")
-        )
-        get_key_btn.pack(side="left", padx=(6, 0), expand=True, fill="x")
+        self.rc_btn = ctk.CTkButton(rc_row, text="Запустить в трее", height=30, width=150, corner_radius=6, command=on_launch_rc)
+        self.rc_btn.pack(side="right")
 
         # Status label
         self.status_lbl = ctk.CTkLabel(frame, text="", font=ctk.CTkFont(size=12))
-        self.status_lbl.pack(fill="x", pady=(0, 8))
+        self.status_lbl.pack(fill="x", pady=(4, 6))
 
         ctk.CTkFrame(frame, height=1, fg_color=("gray80", "#27272a")).pack(fill="x", pady=6)
 
